@@ -1,12 +1,8 @@
 import os
 from io import BytesIO
-from queue import Queue
 import requests
-from flask import Flask, request
 from telegram import Bot, Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CommandHandler, MessageHandler, Filters, CallbackQueryHandler, Dispatcher
-from movies_scraper import search_movies, get_movie
-
 
 TOKEN = os.getenv("TOKEN")
 URL = "https://movie-bot-vert.vercel.app"
@@ -61,25 +57,24 @@ def setup():
     return dispatcher
 
 
-app = Flask(__name__)
-
-
-@app.route('/')
-def index():
-    return 'Hello World!'
-
-
-@app.route('/{}'.format(TOKEN), methods=['GET', 'POST'])
-def respond():
+def handle_update(request):
+    # Process the update from Telegram
     update = Update.de_json(request.get_json(force=True), bot)
     setup().process_update(update)
     return 'ok'
 
 
-@app.route('/setwebhook', methods=['GET', 'POST'])
 def set_webhook():
-    s = bot.setWebhook('{URL}/{HOOK}'.format(URL=URL, HOOK=TOKEN))
+    s = bot.setWebhook(f'{URL}/{TOKEN}')
     if s:
-        return "webhook setup ok"
+        return "Webhook setup ok"
     else:
-        return "webhook setup failed"
+        return "Webhook setup failed"
+
+
+# Entry point for Vercel Serverless Function
+def main(request):
+    if request.method == "POST":
+        return handle_update(request)
+    elif request.method == "GET":
+        return set_webhook()
