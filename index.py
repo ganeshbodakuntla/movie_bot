@@ -49,8 +49,7 @@ def movie_result(update, context) -> None:
 
 
 def setup():
-    update_queue = Queue()
-    dispatcher = Dispatcher(bot, update_queue, use_context=True)
+    dispatcher = Dispatcher(bot, None, use_context=True)
     dispatcher.add_handler(CommandHandler('start', welcome))
     dispatcher.add_handler(MessageHandler(Filters.text, find_movie))
     dispatcher.add_handler(CallbackQueryHandler(movie_result))
@@ -58,13 +57,14 @@ def setup():
 
 
 def handle_update(request):
-    # Process the update from Telegram
+    """Handles the incoming request."""
     update = Update.de_json(request.get_json(force=True), bot)
     setup().process_update(update)
     return 'ok'
 
 
 def set_webhook():
+    """Sets the webhook for the Telegram bot."""
     s = bot.setWebhook(f'{URL}/{TOKEN}')
     if s:
         return "Webhook setup ok"
@@ -72,9 +72,12 @@ def set_webhook():
         return "Webhook setup failed"
 
 
-# Entry point for Vercel Serverless Function
-def main(request):
+# Vercel handler (entry point)
+def handler(request):
+    """Main entry point for Vercel serverless function."""
     if request.method == "POST":
         return handle_update(request)
     elif request.method == "GET":
         return set_webhook()
+    else:
+        return "Method not allowed", 405
